@@ -16,7 +16,8 @@ def fetch(path: str, *, ref: str = "master", transpiled: bool = False) -> str:
     if transpiled:
         path = _transpiled_path(path)
 
-    cached = _cache.read(path)
+    cache_key = f"{ref}/{path}"
+    cached = _cache.read(cache_key)
     if cached is not None:
         return cached
 
@@ -31,5 +32,5 @@ def fetch(path: str, *, ref: str = "master", transpiled: bool = False) -> str:
             ) from exc
         raise
 
-    _cache.write(path, text)
+    _cache.write(cache_key, text)
     return text
