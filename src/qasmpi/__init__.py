@@ -5,7 +5,7 @@ from qasmpi._registry import REGISTRY
 __all__ = ["get_circuit", "list_circuits", "get_size", "clear_cache"]
 
 
-def get_circuit(name: str, *, transpiled: bool = False, ref: str = "main") -> str:
+def get_circuit(name: str, *, transpiled: bool = False, ref: str = "master") -> str:
     """Return the QASM text for a named QASMBench circuit.
 
     Args:

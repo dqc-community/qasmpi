@@ -12,7 +12,7 @@ def _transpiled_path(path: str) -> str:
     return path[:-5] + "_transpiled.qasm"
 
 
-def fetch(path: str, *, ref: str = "main", transpiled: bool = False) -> str:
+def fetch(path: str, *, ref: str = "master", transpiled: bool = False) -> str:
     if transpiled:
         path = _transpiled_path(path)
 

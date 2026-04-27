@@ -75,23 +75,112 @@ def test_get_circuit_calls_fetch(tmp_path):
 
 
 # ── get_circuit (integration — real network) ──────────────────────────────────
+#
+# These tests hit raw.githubusercontent.com. Run with: pytest -m integration
+#
+# Each test picks a circuit whose content is predictable and checks:
+#   - correct qubit register declaration  (proves right file was fetched)
+#   - approximate line count              (proves file wasn't truncated)
+#   - no HTML in response                 (proves no redirect/error page slipped through)
+
+import pathlib
+
+_LOCAL_QASMBENCH = pathlib.Path(__file__).parents[2] / "QASMBench"
+
 
 @pytest.mark.integration
-def test_get_circuit_live_fetch(tmp_path):
+def test_bell_n4_qubit_count(tmp_path):
     from unittest.mock import patch
-
     with patch("qasmpi._cache._CACHE_DIR", tmp_path):
         text = qasmpi.get_circuit("bell_n4")
-
-    assert "OPENQASM" in text
-    assert "qreg" in text
+    assert "qreg q[4]" in text
+    assert len(text.splitlines()) >= 10
+    assert "<html" not in text.lower()
 
 
 @pytest.mark.integration
-def test_get_circuit_live_transpiled(tmp_path):
+def test_qft_n18_qubit_count_and_size(tmp_path):
     from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        text = qasmpi.get_circuit("qft_n18")
+    assert "qreg q[18]" in text
+    assert len(text.splitlines()) >= 800   # qft_n18 is 807 lines locally
+    assert "<html" not in text.lower()
+
+
+@pytest.mark.integration
+def test_adder_n28_large_circuit(tmp_path):
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        text = qasmpi.get_circuit("adder_n28")
+    assert "qreg q[28]" in text
+    assert "<html" not in text.lower()
+
+
+@pytest.mark.integration
+def test_knn_n25_medium_circuit(tmp_path):
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        text = qasmpi.get_circuit("knn_n25")
+    assert "qreg q0[25]" in text
+    assert "<html" not in text.lower()
+
+
+@pytest.mark.integration
+def test_transpiled_differs_from_primary(tmp_path):
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        primary = qasmpi.get_circuit("bell_n4")
+        transpiled = qasmpi.get_circuit("bell_n4", transpiled=True)
+    assert primary != transpiled
+    assert "qreg" in transpiled
+    assert "<html" not in transpiled.lower()
+
+
+@pytest.mark.integration
+def test_missing_transpiled_raises(tmp_path):
+    # bwt_n177 has no transpiled variant in the repo
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        with pytest.raises(FileNotFoundError, match="not found in repo"):
+            qasmpi.get_circuit("bwt_n177", transpiled=True)
+
+
+@pytest.mark.integration
+def test_cache_avoids_second_fetch(tmp_path):
+    # Fetch once, then confirm second call reads from disk (no network needed)
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        first = qasmpi.get_circuit("qft_n18")
+
+    cached_file = tmp_path / "medium" / "qft_n18" / "qft_n18.qasm"
+    assert cached_file.exists()
+    assert cached_file.read_text(encoding="utf-8") == first
+
+    # Second call with network blocked — must still succeed from cache
+    import urllib.request
+    original_urlopen = urllib.request.urlopen
+
+    def no_network(url, **kwargs):
+        raise AssertionError(f"unexpected network call to {url}")
 
     with patch("qasmpi._cache._CACHE_DIR", tmp_path):
-        text = qasmpi.get_circuit("bell_n4", transpiled=True)
+        with patch("urllib.request.urlopen", side_effect=no_network):
+            second = qasmpi.get_circuit("qft_n18")
 
-    assert "OPENQASM" in text
+    assert first == second
+
+
+@pytest.mark.integration
+def test_matches_local_repo(tmp_path):
+    # Cross-check fetched content against the local QASMBench checkout
+    local_file = _LOCAL_QASMBENCH / "medium" / "qft_n18" / "qft_n18.qasm"
+    if not local_file.exists():
+        pytest.skip("local QASMBench repo not present")
+
+    from unittest.mock import patch
+    with patch("qasmpi._cache._CACHE_DIR", tmp_path):
+        remote = qasmpi.get_circuit("qft_n18")
+
+    local = local_file.read_text(encoding="utf-8")
+    assert remote == local
