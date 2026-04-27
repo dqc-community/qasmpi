@@ -1,3 +1,5 @@
+import os
+import time
 import urllib.error
 from unittest.mock import MagicMock, patch
 
@@ -68,6 +70,22 @@ def test_fetch_transpiled_modifies_path(tmp_path):
 
     url = mock_open.call_args[0][0]
     assert "_transpiled" in url
+
+
+def test_fetch_expired_cache_refetches(tmp_path):
+    with (
+        patch("qasmpi._cache._CACHE_DIR", tmp_path),
+        patch("urllib.request.urlopen", return_value=_make_response(FAKE_QASM)) as mock_open,
+    ):
+        fetch("medium/qft_n18/qft_n18.qasm")
+
+        cached_file = tmp_path / "master" / "medium" / "qft_n18" / "qft_n18.qasm"
+        expired = time.time() - (49 * 3600)
+        os.utime(cached_file, (expired, expired))
+
+        fetch("medium/qft_n18/qft_n18.qasm")
+
+    assert mock_open.call_count == 2
 
 
 def test_fetch_ref_appears_in_url(tmp_path):

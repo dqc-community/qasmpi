@@ -1,6 +1,8 @@
 import pathlib
+import time
 
 _CACHE_DIR = pathlib.Path.home() / ".cache" / "qasmpi"
+_TTL = 48 * 3600  # seconds
 
 
 def cache_path(repo_path: str) -> pathlib.Path:
@@ -10,7 +12,9 @@ def cache_path(repo_path: str) -> pathlib.Path:
 def read(repo_path: str) -> str | None:
     p = cache_path(repo_path)
     if p.exists():
-        return p.read_text(encoding="utf-8")
+        if time.time() - p.stat().st_mtime < _TTL:
+            return p.read_text(encoding="utf-8")
+        p.unlink()
     return None
 
 

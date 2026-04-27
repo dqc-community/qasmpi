@@ -1,4 +1,4 @@
-.PHONY: test test-integration publish
+.PHONY: test test-integration publish clear-cache
 
 DIST_DIR := dist
 REPOSITORY ?= testpypi
@@ -17,6 +17,9 @@ test:
 
 test-integration:
 	$(PYTHON) -m pytest -m integration -v
+
+clear-cache:
+	$(PYTHON) -c "import qasmpi; qasmpi.clear_cache()"
 
 publish:
 	rm -rf $(DIST_DIR)

@@ -153,7 +153,7 @@ def test_cache_avoids_second_fetch(tmp_path):
     with patch("qasmpi._cache._CACHE_DIR", tmp_path):
         first = qasmpi.get_circuit("qft_n18")
 
-    cached_file = tmp_path / "medium" / "qft_n18" / "qft_n18.qasm"
+    cached_file = tmp_path / "master" / "medium" / "qft_n18" / "qft_n18.qasm"
     assert cached_file.exists()
     assert cached_file.read_text(encoding="utf-8") == first
 
