@@ -1,6 +1,6 @@
 [project]
 name = "qasmpi"
-version = "0.1.0"
+version = "0.1.1"
 description = "Fetch any QASMBench circuit by name from the dqc-community/QASMBench repo"
 readme = "README.md"
 requires-python = ">=3.10"
