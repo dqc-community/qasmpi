@@ -1,0 +1,26 @@
+[project]
+name = "qasmpi"
+version = "0.1.0"
+description = "Fetch any QASMBench circuit by name from the dqc-community/QASMBench repo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    { name = "DQC Community" },
+]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: hits the real GitHub network (deselect with -m 'not integration')",
+]
+testpaths = ["tests"]
